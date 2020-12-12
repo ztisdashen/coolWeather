@@ -1,10 +1,14 @@
 package com.zt.coolweather.util
 
+import com.google.gson.Gson
 import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import com.zt.coolweather.db.City
 import com.zt.coolweather.db.County
 import com.zt.coolweather.db.Province
+import com.zt.coolweather.json.Weather
 import org.json.JSONArray
+import org.json.JSONObject
 import java.lang.Exception
 
 /**
@@ -85,4 +89,16 @@ fun handleCountyResponse(response: String, cityId: Int): Boolean {
         }
     }
     return false
+}
+
+fun handleWeatherResponse(response: String): Weather? {
+    try {
+        val jsonObj = JSONObject(response)
+        val jsonArray = jsonObj.getJSONArray("HeWeather")
+        val weatherContent = jsonArray.getJSONObject(0).toString()
+        return Gson().fromJson(weatherContent,Weather::class.java)
+    }catch (e:Exception){
+        e.printStackTrace()
+    }
+    return null;
 }

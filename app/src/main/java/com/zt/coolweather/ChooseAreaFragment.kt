@@ -2,6 +2,7 @@ package com.zt.coolweather
 
 import android.app.ProgressDialog
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -22,10 +23,13 @@ import org.litepal.LitePal
 import org.litepal.crud.DataSupport
 import org.litepal.crud.LitePalSupport
 import java.io.IOException
+import java.util.logging.Level
 import java.util.zip.Inflater
 
 /**
  * 遍历省市县数据的fragment
+ *
+ * d732a53f967642a7ad191c991ddd3437
  */
 class ChooseAreaFragment : Fragment() {
     var progressDialog: ProgressDialog? = null
@@ -73,6 +77,15 @@ class ChooseAreaFragment : Fragment() {
                 LEVEL_CITY -> {
                     selectedCity = cityList[position]
                     queryCounties()
+                }
+                LEVEL_COUNTY -> {
+                    selectedCounty = countyList[position]
+                    selectedCounty.weatherId?.let {
+                        val intent = Intent(activity, WeatherActivity::class.java)
+                        intent.putExtra("weather_id", it)
+                        startActivity(intent)
+                        activity?.finish()
+                    }
                 }
             }
         }
@@ -145,14 +158,15 @@ class ChooseAreaFragment : Fragment() {
             queryFromServer(url, LEVEL_PROVINCE)
         }
     }
+
     val TAG = "ChooseAreaFragment"
     private fun queryFromServer(url: String, type: Int) {
         sendHttpRequest(url, object : okhttp3.Callback {
             override fun onFailure(call: Call, e: IOException) {
-                Log.e(TAG, "onFailure: ${e.message}" )
-                Log.e(TAG, "onFailure: ${e.cause}" )
+                Log.e(TAG, "onFailure: ${e.message}")
+                Log.e(TAG, "onFailure: ${e.cause}")
                 activity?.runOnUiThread {
-                   closeProgressDialog()
+                    closeProgressDialog()
                     Toast.makeText(activity, "加载失败", Toast.LENGTH_SHORT).show()
                 }
             }
