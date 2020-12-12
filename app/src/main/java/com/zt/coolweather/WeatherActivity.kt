@@ -1,5 +1,6 @@
 package com.zt.coolweather
 
+import android.content.Intent
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
@@ -212,7 +213,8 @@ class WeatherActivity : AppCompatActivity() {
             washCarText.text = "洗车指数：${weather.suggestion.carWash.info}"
             sportView.text = "运动指数：${weather.suggestion.sport.info}"
             weatherLayout.visibility = View.VISIBLE
-
         }
+        val i = Intent(this,AutoUpdateService::class.java)
+        startService(i)
     }
 }
