@@ -80,12 +80,23 @@ class ChooseAreaFragment : Fragment() {
                 }
                 LEVEL_COUNTY -> {
                     selectedCounty = countyList[position]
-                    selectedCounty.weatherId?.let {
-                        val intent = Intent(activity, WeatherActivity::class.java)
-                        intent.putExtra("weather_id", it)
-                        startActivity(intent)
-                        activity?.finish()
+                    when (activity) {
+                        is MainActivity -> {
+                            selectedCounty.weatherId?.let {
+                                val intent = Intent(activity, WeatherActivity::class.java)
+                                intent.putExtra("weather_id", it)
+                                startActivity(intent)
+                                activity?.finish()
+                            }
+                        }
+                        is WeatherActivity -> {
+                            (activity as WeatherActivity).drawerLayout.closeDrawers()
+                            (activity as WeatherActivity).swipeFreshLayout.isRefreshing = true
+                            (activity as WeatherActivity).requestWeatherInfo(selectedCounty.weatherId)
+
+                        }
                     }
+
                 }
             }
         }

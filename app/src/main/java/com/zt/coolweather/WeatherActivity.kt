@@ -12,6 +12,9 @@ import android.view.WindowInsetsController
 import android.widget.*
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.GravityCompat
+import androidx.drawerlayout.widget.DrawerLayout
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.bumptech.glide.Glide
 import com.zt.coolweather.json.Weather
 import com.zt.coolweather.util.handleWeatherResponse
@@ -38,8 +41,18 @@ class WeatherActivity : AppCompatActivity() {
     lateinit var washCarText: TextView
     lateinit var comfortText: TextView
     lateinit var sportView: TextView
-    val bingPiture: ImageView by lazy {
+    val bingPicture: ImageView by lazy {
         findViewById<ImageView>(R.id.bing_pic)
+    }
+    val swipeFreshLayout: SwipeRefreshLayout by lazy {
+        findViewById<SwipeRefreshLayout>(R.id.refresh_layout)
+    }
+    lateinit var weatherID: String
+    val navButton: Button by lazy {
+        findViewById<Button>(R.id.nav_button)
+    }
+    val drawerLayout by lazy {
+        findViewById<DrawerLayout>(R.id.drawer_layout)
     }
 
     @RequiresApi(Build.VERSION_CODES.R)
@@ -52,8 +65,9 @@ class WeatherActivity : AppCompatActivity() {
                 WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         }
     }
+
     @RequiresApi(22)
-    fun doSome22(){
+    fun doSome22() {
         val decorView = window.decorView
         decorView.systemUiVisibility =
             View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN.or(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN)
@@ -63,11 +77,7 @@ class WeatherActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
 
-//        if (Build.VERSION.SDK_INT>= 30){
-//            doSome()
-//        }else{
-            doSome22()
-//        }
+        doSome22()
         window.statusBarColor = Color.TRANSPARENT
         setContentView(R.layout.activity_weather)
         weatherLayout = findViewById(R.id.weather_layout)
@@ -88,14 +98,25 @@ class WeatherActivity : AppCompatActivity() {
             showWeatherInfo(weather)
         } else {
             val weatherID = intent.getStringExtra("weather_id")
+            if (weatherID != null) this.weatherID = weatherID
             weatherLayout.visibility = View.INVISIBLE
             requestWeatherInfo(weatherID)
         }
         val picUrl = prefs.getString("bing_pic", null)
         if (picUrl != null) {
-            Glide.with(this).load(picUrl).into(bingPiture)
+            Glide.with(this).load(picUrl).into(bingPicture)
         } else {
             loadImage()
+        }
+        swipeFreshLayout.setColorSchemeColors(
+            resources.getColor(R.color.design_default_color_primary),
+            resources.getColor(R.color.design_default_color_error)
+        )
+        swipeFreshLayout.setOnRefreshListener {
+            requestWeatherInfo(weatherID)
+        }
+        navButton.setOnClickListener {
+            drawerLayout.openDrawer(GravityCompat.START)
         }
     }
 
@@ -115,7 +136,7 @@ class WeatherActivity : AppCompatActivity() {
                     edit.putString("bing_pic", picUrl)
                     edit.apply()
                     runOnUiThread {
-                        Glide.with(this@WeatherActivity).load(picUrl).into(bingPiture)
+                        Glide.with(this@WeatherActivity).load(picUrl).into(bingPicture)
                     }
                 }
             }
@@ -123,11 +144,13 @@ class WeatherActivity : AppCompatActivity() {
         })
     }
 
-    private fun requestWeatherInfo(weatherID: String?) {
+     fun requestWeatherInfo(weatherID: String?) {
         val url = "http://guolin.tech/api/weather?cityid=${weatherID}&key=${KEY}"
         sendHttpRequest(url, object : okhttp3.Callback {
             override fun onFailure(call: Call, e: IOException) {
                 Log.e(TAG, "onFailure: ${e.message}")
+                Toast.makeText(this@WeatherActivity, "获取天气失败", Toast.LENGTH_SHORT).show()
+                swipeFreshLayout.isRefreshing = false
             }
 
             override fun onResponse(call: Call, response: Response) {
@@ -151,9 +174,7 @@ class WeatherActivity : AppCompatActivity() {
 
                     }
                 }
-                runOnUiThread {
-
-                }
+                swipeFreshLayout.isRefreshing = false
             }
 
         })
@@ -162,6 +183,7 @@ class WeatherActivity : AppCompatActivity() {
 
     private fun showWeatherInfo(weather: Weather?) {
         if (weather != null) {
+            weatherID = weather.basic.weatherId
             val cityName = weather.basic.cityName
             val updateTime = weather.basic.update.updateTime.split(" ")[0]
             val degree = "${weather.now.temperature}℃"
